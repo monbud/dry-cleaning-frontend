@@ -1,0 +1,18 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { api, Logo, Field, ErrorBox } from './ui';
+export default function AuthForm({ mode }) {
+  const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
+  const register = mode === 'register', forgot = mode === 'forgot-password', reset = mode === 'reset-password';
+  const title = register ? 'A fresh start for your business.' : forgot ? 'Forgot your password?' : reset ? 'Set a new password.' : 'Good to have you back.';
+  async function submit(e) {
+    e.preventDefault(); setError(''); setBusy(true);
+    const values = Object.fromEntries(new FormData(e.currentTarget)); delete values.terms;
+    if (reset) values.token = new URLSearchParams(window.location.search).get('token') || '';
+    try { const result = await api(`/auth/${mode}`, { method: 'POST', body: values }); if (forgot || reset) setMessage(result.message || 'Password updated. You can now sign in.'); else window.location.assign('/dashboard'); }
+    catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
+  return <main className="auth-layout"><aside className="auth-story"><Logo light/><div><span className="eyebrow">A LITTLE MORE CARE</span><h1>Every garment.<br/>Every customer.<br/><em>All together.</em></h1><p>A thoughtful workspace for the people<br/>who keep Nigeria looking its best.</p></div><span className="auth-foot"><ShieldCheck size={18}/> A platform by FinBud Technologies Limited</span></aside><section className="auth-main"><Link href="/" className="back-link">← Back to home</Link><div className="auth-form-wrap"><span className="eyebrow">{register ? 'LET’S GET YOU SET UP' : 'YOUR FINBUD WORKSPACE'}</span><h2>{title}</h2><p>{register ? 'Create your account, then make yourself at home.' : forgot ? 'We’ll email you a link to reset it.' : 'Everyday work, a little more organised.'}</p>{message ? <div className="success-box"><CheckCircle2/>{message}<Link href="/login" className="button">Go to sign in</Link></div> : <form onSubmit={submit}><ErrorBox error={error}/>{register && <Field label="Your name"><input autoComplete="name" name="name" required placeholder="e.g. Ada Okafor"/></Field>}{!reset && <Field label="Email address"><input type="email" autoComplete="email" name="email" required placeholder="you@yourbusiness.com"/></Field>}{!forgot && <Field label={reset ? 'New password' : 'Password'} hint={register || reset ? 'At least 10 characters.' : undefined}><input type="password" autoComplete={register || reset ? 'new-password' : 'current-password'} name="password" required minLength={register || reset ? 10 : 1} maxLength={72} placeholder="Enter your password"/></Field>}{mode === 'login' && <Link className="forgot-link" href="/forgot-password">Forgot password?</Link>}{register && <label className="check-field"><input type="checkbox" name="terms" required/><span>I agree to the <Link href="/terms">Terms of Use</Link> and acknowledge the <Link href="/privacy">Privacy Policy</Link>.</span></label>}<button className="button full" disabled={busy}>{busy ? 'Please wait…' : register ? 'Create your account' : forgot ? 'Send reset link' : reset ? 'Update password' : 'Sign in'}<ArrowRight size={18}/></button></form>}<p className="auth-switch">{register ? 'Already have an account?' : 'New to the platform?'} <Link href={register ? '/login' : '/register'}>{register ? 'Sign in' : 'Get started'}</Link></p></div><small>© {new Date().getFullYear()} FinBud Technologies Limited</small></section></main>;
+}
